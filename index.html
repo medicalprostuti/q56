@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "নিচের কোনটি সবচেয়ে কম ভেদনযোগ্যতা সম্পন্ন রশ্মি?",
+          options: {
+            a: "আলফা রশ্মি",
+            b: "বিটা রশ্মি",
+            c: "এক্স-রে",
+            d: "গামা রশ্মি",
+          },
+          correct: "a",
+          explanation:
+            "<p>আলফা রশ্মি (α-রশ্মি) হলো দুটি প্রোটন ও দুটি নিউট্রন নিয়ে গঠিত হিলিয়াম নিউক্লিয়াস। এর ভর ও চার্জ বেশি হওয়ায় এটি সহজেই পদার্থের সাথে মিথস্ক্রিয়া করে শক্তি হারায়। ফলে এর ভেদন ক্ষমতা অত্যন্ত কম, এমনকি একটি কাগজের পাত বা সামান্য বায়ু দ্বারাও এটি শোষিত হয়।</p>",
+        },
+        {
+          id: 2,
+          question: "আণবিক বিক্রিয়ায় কয়টি α কণা বের হবে?",
+          options: {
+            a: "8",
+            b: "2",
+            c: "6",
+            d: "4",
+          },
+          correct: "b",
+          explanation:
+            "<p>প্রশ্নটিতে নির্দিষ্ট আণবিক বিক্রিয়া উল্লেখ করা হয়নি, তাই সরাসরি উত্তর দেওয়া কঠিন। তবে, যদি একটি নির্দিষ্ট বিক্রিয়ার ক্ষেত্রে বলা হয়, যেমন <sup>238</sup>U থেকে <sup>230</sup>Th তে রূপান্তরিত হতে, তাহলে: <br><sup>238</sup>U<sub>92</sub> → <sup>230</sup>Th<sub>90</sub> + X α<br>ভর সংখ্যা পরিবর্তন = 238 - 230 = 8<br>পারমাণবিক সংখ্যা পরিবর্তন = 92 - 90 = 2<br>একটি আলফা কণার ভর সংখ্যা 4 এবং পারমাণবিক সংখ্যা 2।<br>সুতরাং, ভর সংখ্যা পরিবর্তন থেকে α কণার সংখ্যা = 8 / 4 = 2<br>পারমাণবিক সংখ্যা পরিবর্তন থেকে α কণার সংখ্যা = 2 / 2 = 1<br>এক্ষেত্রে, সাধারণত একটি বিক্রিয়াতে আলফা কণা নির্গমনের ফলে ভর সংখ্যা 4 এবং পারমাণবিক সংখ্যা 2 কমে যায়। যদি নিউক্লিয়াসের ভর সংখ্যা 8 কমে এবং পারমাণবিক সংখ্যা 4 কমে, তাহলে দুটি আলফা কণা নির্গত হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "নিউট্রন নির্গত হয়-",
+          options: {
+            a: "ফোটন শোষনের সময়",
+            b: "গামা রে নির্গমনের সময়",
+            c: "বিটা ক্ষয়ের সময়",
+            d: "পরমাণু উত্তেজিত হলে",
+          },
+          correct: "d",
+          explanation:
+            "<p>পরমাণু উত্তেজিত হলে, বিশেষ করে নিউক্লিয়াস উত্তেজিত হলে, অতিরিক্ত শক্তি নির্গত করার জন্য বিভিন্ন উপায়ে ক্ষয় হতে পারে। কিছু নিউক্লীয় বিক্রিয়া বা ফিশন প্রক্রিয়ায় নিউট্রন নির্গত হতে পারে। এটি সরাসরি তেজস্ক্রিয় ক্ষয়ের (আলফা, বিটা, গামা) মতো সাধারণ প্রক্রিয়া না হলেও, উচ্চ শক্তির কারণে নিউক্লিয়াস থেকে নিউট্রন নির্গত হওয়া সম্ভব।</p>",
+        },
+        {
+          id: 4,
+          question: "কোন রশ্মির সর্বাধিক অনুপ্রবেশ ক্ষমতা রয়েছে?",
+          options: {
+            a: "X-ray",
+            b: "Beta",
+            c: "Alpha",
+            d: "Gamma",
+          },
+          correct: "d",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) হলো উচ্চ শক্তিসম্পন্ন তড়িৎচুম্বকীয় তরঙ্গ, যার কোনো ভর বা চার্জ নেই। তাই এটি পদার্থের সাথে খুব কম মিথস্ক্রিয়া করে এবং এর ভেদন ক্ষমতা অত্যন্ত বেশি। গামা রশ্মি মোটা সীসার দেয়াল বা কংক্রিট ভেদ করে যেতে পারে।</p>",
+        },
+        {
+          id: 5,
+          question: "তেজস্ক্রিয় মৌলগুলোকে কোন ধাতুর প্যাকেটে সংরক্ষণ করা হয়?",
+          options: {
+            a: "স্বর্ণ",
+            b: "লোহা",
+            c: "রুপা",
+            d: "সিসা",
+          },
+          correct: "d",
+          explanation:
+            "<p>সিসা (Lead) একটি অত্যন্ত ঘন ধাতু এবং এটি তেজস্ক্রিয় বিকিরণ শোষণে খুব কার্যকর। তাই তেজস্ক্রিয় মৌলগুলো নিরাপদে সংরক্ষণের জন্য সিসার তৈরি পাত্র বা প্যাকেটে রাখা হয় যাতে ক্ষতিকারক বিকিরণ বাইরে ছড়িয়ে পড়তে না পারে এবং মানুষ ও পরিবেশ সুরক্ষিত থাকে।</p>",
+        },
+        {
+          id: 6,
+          question: "নিচের কোনটি তেজস্ক্রিয় রশ্মি নয়?",
+          options: {
+            a: "গামা রশ্মি",
+            b: "এক্স রশ্মি",
+            c: "আলফা পার্টিকেল",
+            d: "গামা রশ্মি",
+          },
+          correct: "b",
+          explanation:
+            "<p>এক্স-রশ্মি (X-ray) হলো উচ্চ শক্তিসম্পন্ন তড়িৎচুম্বকীয় বিকিরণ যা দ্রুতগতিসম্পন্ন ইলেকট্রনকে লক্ষ্যবস্তুতে আঘাত করার মাধ্যমে কৃত্রিমভাবে উৎপন্ন করা হয়। এটি তেজস্ক্রিয় ক্ষয়ের মাধ্যমে প্রাকৃতিকভাবে নির্গত হয় না, যদিও এটি আয়নিত বিকিরণ হিসেবে ক্ষতিকর হতে পারে। অন্যদিকে, আলফা, বিটা এবং গামা রশ্মি তেজস্ক্রিয় ক্ষয় প্রক্রিয়ার স্বাভাবিক উৎপাদ।</p>",
+        },
+        {
+          id: 7,
+          question: "20 সেন্টিমিটার পুরু স্টিল ভেদ করে যেতে পারে কোনটি?",
+          options: {
+            a: "α-রশ্মি",
+            b: "β-রশ্মি",
+            c: "γ-রশ্মি",
+            d: "সবগুলোই",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) এর ভেদন ক্ষমতা সবচেয়ে বেশি। এটি কয়েক সেন্টিমিটার পুরু সীসা বা কংক্রিটের দেয়াল ভেদ করতে পারে। 20 সেন্টিমিটার পুরু স্টিল ভেদ করার ক্ষমতা শুধুমাত্র গামা রশ্মিরই রয়েছে, কারণ আলফা ও বিটা রশ্মির ভেদন ক্ষমতা অনেক কম।</p>",
+        },
+        {
+          id: 8,
+          question: "লেজার রশ্মির বৈশিষ্ট্য নয় কোনটি?",
+          options: {
+            a: "এ রশ্মি নিখুঁত ভাবে সমান্তরাল",
+            b: "এ রশ্মির তীব্রতা খুব বেশি",
+            c: "এ রশ্মি পানি দ্বারা সহজেই শোষিত হয়",
+            d: "এ রশ্মির সাহায্যে পৃথিবী থেকে চাঁদের দূরত্ব মাপা যায়",
+          },
+          correct: "c",
+          explanation:
+            "<p>লেজার রশ্মি তার উচ্চ সমান্তরালতা, একক বর্ণ এবং উচ্চ তীব্রতার জন্য পরিচিত। এটি বিভিন্ন মাধ্যমে শোষিত হতে পারে, তবে পানি দ্বারা সহজেই শোষিত হওয়া এর একটি সার্বজনীন বৈশিষ্ট্য নয়, বরং বিভিন্ন তরঙ্গদৈর্ঘ্যের লেজার বিভিন্ন মাত্রায় শোষিত হয়। লেজারের তীব্রতা এবং সমান্তরালতার কারণে এটি পৃথিবী থেকে চাঁদের দূরত্ব মাপার মতো কাজে ব্যবহৃত হয়।</p>",
+        },
+        {
+          id: 9,
+          question: "নিম্নের কোনটি লেজারের জন্য সঠিক?",
+          options: {
+            a: "লেজার এক বর্ণের আলো",
+            b: "রুবি থেকে তৈরি লেজার নীলচে সবুজ হয়",
+            c: "ক্রিপটন লেজারের রং লাল",
+            d: "আলোক সজ্জায় লেজার ব্যবহার করা যায় না",
+          },
+          correct: "a",
+          explanation:
+            "<p>লেজার (Light Amplification by Stimulated Emission of Radiation) হলো এক ধরনের আলো যা সুসংগত (coherent), সমান্তরাল এবং একবর্ণী (monochromatic)। অর্থাৎ, লেজারের আলোতে শুধুমাত্র একটি নির্দিষ্ট তরঙ্গদৈর্ঘ্যের রং থাকে, যা সাধারণ আলোর মতো বহু বর্ণের মিশ্রণ নয়। এটি লেজারের একটি মৌলিক বৈশিষ্ট্য।</p>",
+        },
+        {
+          id: 10,
+          question: "নিম্নের কোন তথ্যটি সঠিক নয়?",
+          options: {
+            a: "গামা কণার স্থির ভর 9.1 x 10⁻³¹ kg",
+            b: "ফটোগ্রাফিক প্লেটে বিটা রশ্মির প্রতিক্রিয়া হয়",
+            c: "আলফা কণার ভর হাইড্রোজেন পরমাণুর চাইতে চারগুণ বেশি",
+            d: "আলফা রশ্মি জিঙ্ক সালফাইড অথবা বেরিয়াম প্লাটিনোসায়ানাইড পর্দায় প্রতিপ্রভা সৃষ্টি করে",
+          },
+          correct: "a",
+          explanation:
+            "<p>গামা রশ্মি হলো তড়িৎচুম্বকীয় তরঙ্গ, যা ফোটন কণা দ্বারা গঠিত। ফোটনের কোনো স্থির ভর নেই, অর্থাৎ এর স্থির ভর শূন্য। 9.1 x 10<sup>-31</sup> kg হলো ইলেকট্রনের স্থির ভর। তাই, গামা কণার স্থির ভর 9.1 x 10<sup>-31</sup> kg এই তথ্যটি সঠিক নয়।</p>",
+        },
+        {
+          id: 11,
+          question: "চার্জ নিরপেক্ষ রশ্মি কোনটি?",
+          options: {
+            a: "আলফা",
+            b: "বিটা",
+            c: "গামা",
+            d: "ক্যাথোড",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) হলো উচ্চ শক্তিসম্পন্ন তড়িৎচুম্বকীয় বিকিরণ বা ফোটন। এর কোনো বৈদ্যুতিক চার্জ নেই এবং এটি চৌম্বক ক্ষেত্র বা তড়িৎ ক্ষেত্র দ্বারা বিচ্যুত হয় না। আলফা রশ্মি ধনাত্মক চার্জযুক্ত, বিটা রশ্মি ঋণাত্মক চার্জযুক্ত এবং ক্যাথোড রশ্মি ঋণাত্মক চার্জযুক্ত।</p>",
+        },
+        {
+          id: 12,
+          question: "সবচেয়ে শক্তিশালী নন আয়োনাইজিং রেডিয়েশন হলো-",
+          options: {
+            a: "অতিবেগুনি রশ্মি",
+            b: "রাডার",
+            c: "মাইক্রোওয়েভ",
+            d: "অবলোহিত রশ্মি",
+          },
+          correct: "a",
+          explanation:
+            "<p>নন-আয়নাইজিং রেডিয়েশন বলতে সেই বিকিরণকে বোঝায় যার শক্তি পরমাণু থেকে ইলেকট্রন সরাতে যথেষ্ট নয়। এর মধ্যে রেডিও তরঙ্গ, মাইক্রোওয়েভ, অবলোহিত রশ্মি এবং দৃশ্যমান আলো পড়ে। অতিবেগুনি রশ্মি (UV-ray) নন-আয়নাইজিং হলেও এর শক্তি এই তালিকার অন্যদের চেয়ে বেশি, যা কোষের ক্ষতি সাধন করতে পারে।</p>",
+        },
+        {
+          id: 13,
+          question: "নিচের কোনটির গতিশক্তি সবচেয়ে বেশি?",
+          options: {
+            a: "γ-ray",
+            b: "α-ray",
+            c: "β-ray",
+            d: "sound",
+          },
+          correct: "b",
+          explanation:
+            "<p>তেজস্ক্রিয় ক্ষয় থেকে নির্গত আলফা কণা (α-ray) সাধারণত বিটা কণা (β-ray) এবং গামা রশ্মি (γ-ray) এর চেয়ে বেশি গতিশক্তি সম্পন্ন হয়। আলফা কণা একটি ভারী হিলিয়াম নিউক্লিয়াস হওয়ায় এটি তেজস্ক্রিয় নিউক্লিয়াস থেকে নির্গত হওয়ার সময় প্রচুর শক্তি অর্জন করে, যদিও এর ভেদন ক্ষমতা কম।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "একটি সীসার খণ্ডে সুড়ঙ্গ করে তেজস্ক্রিয় পদার্থ ইউরেনিয়াম রাখা হলে, সুড়ঙ্গ পথে নির্গত তেজস্ক্রিয় রশ্মিটি-",
+          options: {
+            a: "α-রশ্মি",
+            b: "β-রশ্মি",
+            c: "γ-রশ্মি",
+            d: "সব",
+          },
+          correct: "d",
+          explanation:
+            "<p>যখন একটি তেজস্ক্রিয় পদার্থ (যেমন ইউরেনিয়াম) সীসার খণ্ডে রাখা হয় এবং একটি ছোট সুড়ঙ্গ দিয়ে বিকিরণ নির্গত হতে দেওয়া হয়, তখন সাধারণত আলফা (α), বিটা (β) এবং গামা (γ) — এই তিনটি প্রধান প্রকারের তেজস্ক্রিয় রশ্মিই নির্গত হয়। সীসা আলফা ও বিটা রশ্মিকে আটকে দিতে পারে, কিন্তু গামা রশ্মি এর মধ্য দিয়েও কিছুটা যেতে পারে। তবে, সুড়ঙ্গ পথে সব ধরনের রশ্মি নির্গত হওয়ার সম্ভাবনা থাকে।</p>",
+        },
+        {
+          id: 15,
+          question: "নিউট্রিনো নির্গত হয় -",
+          options: {
+            a: "পরমাণু উত্তেজিত হলে",
+            b: "গামা নির্গমনের সময়",
+            c: "ফোটন শোষণের সময়",
+            d: "বিটা ক্ষয়ের সময়",
+          },
+          correct: "d",
+          explanation:
+            "<p>নিউট্রিনো হলো একটি ক্ষুদ্র, চার্জবিহীন মৌলিক কণা যা বিটা ক্ষয় প্রক্রিয়ার সময় নির্গত হয়। বিটা ক্ষয় হলো এমন একটি প্রক্রিয়া যেখানে নিউক্লিয়াসের একটি নিউট্রন একটি প্রোটনে বা একটি প্রোটন একটি নিউট্রনে রূপান্তরিত হয়, সাথে একটি ইলেকট্রন (বিটা কণা) বা পজিট্রন এবং একটি নিউট্রিনো বা অ্যান্টি-নিউট্রিনো নির্গত হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "নিচের কোনটি চৌম্বক ক্ষেত্রে সবচেয়ে বেশি বিক্ষেপ হবে?",
+          options: {
+            a: "α-কণা",
+            b: "β-কণা",
+            c: "X-রশ্মি",
+            d: "γ-রশ্মি",
+          },
+          correct: "b",
+          explanation:
+            "<p>বিটা কণা (β-কণা) হলো ইলেকট্রন বা পজিট্রনের স্রোত। এদের ভর আলফা কণার চেয়ে অনেক কম এবং চার্জের মান একই। তাই, চৌম্বক ক্ষেত্রে বিটা কণার ভর কম হওয়ায় এটি আলফা কণার চেয়ে বেশি বিক্ষিপ্ত হয়। এক্স-রশ্মি এবং গামা রশ্মি চার্জবিহীন হওয়ায় চৌম্বক ক্ষেত্র দ্বারা প্রভাবিত হয় না।</p>",
+        },
+        {
+          id: 17,
+          question: "দুর্বল নিউক্লীয় বল সৃষ্টি হয়-",
+          options: {
+            a: "বিটা ক্ষয়ের জন্য",
+            b: "প্রোটন ক্ষয়ের জন্য",
+            c: "গামা ক্ষয়ের জন্য",
+            d: "নিউট্রন ক্ষয়ের জন্য",
+          },
+          correct: "a",
+          explanation:
+            "<p>দুর্বল নিউক্লীয় বল প্রকৃতির চারটি মৌলিক বলের একটি। এই বল বিটা ক্ষয় প্রক্রিয়ার জন্য দায়ী, যেখানে একটি কোয়ার্ক তার ফ্লেভার পরিবর্তন করে। এই বলের কারণে নিউট্রন প্রোটনে রূপান্তরিত হতে পারে এবং ইলেকট্রন বা পজিট্রন ও নিউট্রিনো নির্গত হয়।</p>",
+        },
+        {
+          id: 18,
+          question: "ক্যান্সার আক্রান্ত সেল ধ্বংস করতে কোনটি ব্যবহার করা হয়?",
+          options: {
+            a: "X-ray",
+            b: "UV-ray",
+            c: "Gamma ray",
+            d: "Infrared radiation",
+          },
+          correct: "c",
+          explanation:
+            "<p>ক্যান্সার কোষ ধ্বংস করতে গামা রশ্মি (Gamma ray) ব্যবহার করা হয়, কারণ এর উচ্চ ভেদন ক্ষমতা রয়েছে। এই রশ্মি ক্যান্সার কোষের ডিএনএকে ক্ষতিগ্রস্ত করে এবং তাদের বৃদ্ধি বন্ধ করে দেয়। এই চিকিৎসা পদ্ধতিকে রেডিয়েশন থেরাপি বা বিকিরণ চিকিৎসা বলা হয়।</p>",
+        },
+        {
+          id: 19,
+          question: "নিউট্রিনো ও বিটা কণার নির্গমন কোন মৌলিক বলের কারণে ঘটে?",
+          options: {
+            a: "মহাকর্ষ বল",
+            b: "দুর্বল নিউক্লীয় বল",
+            c: "সবল নিউক্লীয় বল",
+            d: "তড়িৎ চুম্বকীয় বল",
+          },
+          correct: "b",
+          explanation:
+            "<p>নিউট্রিনো এবং বিটা কণার নির্গমন দুর্বল নিউক্লীয় বলের কারণে ঘটে। বিটা ক্ষয় প্রক্রিয়ায়, একটি নিউক্লিয়াসের নিউট্রন প্রোটনে (বা প্রোটন নিউট্রনে) রূপান্তরিত হয়, এবং এই রূপান্তরের সময় একটি ইলেকট্রন (বিটা কণা) বা পজিট্রন এবং একটি নিউট্রিনো (বা অ্যান্টি-নিউট্রিনো) নির্গত হয়। এটি দুর্বল বলের একটি গুরুত্বপূর্ণ উদাহরণ।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "দুর্বল নিউক্লীয় বলের ক্ষেত্রে নিউক্লিয়াস থেকে কী নির্গত হয়?",
+          options: {
+            a: "α-কণা",
+            b: "β-কণা",
+            c: "বেরিয়ন কণা",
+            d: "ইলেকট্রন কণা",
+          },
+          correct: "b",
+          explanation:
+            "<p>দুর্বল নিউক্লীয় বলের কারণে বিটা ক্ষয় (β-ক্ষয়) ঘটে। এই প্রক্রিয়ায় নিউক্লিয়াস থেকে বিটা কণা (যা ইলেকট্রন বা পজিট্রন হতে পারে) এবং একটি নিউট্রিনো বা অ্যান্টি-নিউট্রিনো নির্গত হয়। এটি একটি মৌলিক প্রক্রিয়া যা তেজস্ক্রিয়তা ব্যাখ্যা করে।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "তেজস্ক্রিয় কণা বা রশ্মিগুলোর ভেদন ক্ষমতা বিবেচনায় নিচের কোনটি সঠিক?",
+          options: {
+            a: "γ-রশ্মি > β-কণা > α-কণা",
+            b: "α-কণা > β-কণা > γ-রশ্মি",
+            c: "γ-রশ্মি > α-কণা > β-কণা",
+            d: "β-কণা > α-কণা > γ-রশ্মি",
+          },
+          correct: "a",
+          explanation:
+            "<p>তেজস্ক্রিয় রশ্মিগুলোর ভেদন ক্ষমতা তাদের ভর, চার্জ এবং শক্তির উপর নির্ভরশীল। গামা রশ্মির কোনো ভর বা চার্জ না থাকায় এর ভেদন ক্ষমতা সবচেয়ে বেশি। বিটা কণার ভর কম এবং চার্জ থাকায় এর ভেদন ক্ষমতা আলফা কণার চেয়ে বেশি কিন্তু গামা রশ্মির চেয়ে কম। আলফা কণার ভর ও চার্জ বেশি হওয়ায় এর ভেদন ক্ষমতা সবচেয়ে কম। সুতরাং, সঠিক ক্রম হলো γ-রশ্মি > β-কণা > α-কণা।</p>",
+        },
+        {
+          id: 22,
+          question: "কোন উক্তিটি সঠিক?",
+          options: {
+            a: "β-রশ্মি ও ক্যাথোড রশ্মি সদৃশ",
+            b: "γ-রশ্মি হলো উচ্চ শক্তিসম্পন্ন নিউট্রনের স্রোত",
+            c: "α-কণাগুলি একক আয়নিত হিলিয়াম পরমাণু",
+            d: "প্রোটন ও নিউট্রনের ভর হুবহু এক",
+          },
+          correct: "a",
+          explanation:
+            "<p>বিটা রশ্মি হলো দ্রুত গতিশীল ইলেকট্রনের স্রোত, যা তেজস্ক্রিয় ক্ষয়ের সময় নিউক্লিয়াস থেকে নির্গত হয়। ক্যাথোড রশ্মি হলোও ইলেকট্রনের স্রোত, যা ক্যাথোড রে টিউবে উৎপন্ন হয়। যদিও উৎস ভিন্ন, এদের মূল কণিকা একই (ইলেকট্রন) এবং ধর্মও সদৃশ।</p>",
+        },
+        {
+          id: 23,
+          question: "একটি তেজস্ক্রিয় মৌল নিঃসরণ করে",
+          options: {
+            a: "একই সঙ্গে α, β এবং γ",
+            b: "আগে α পরে β এবং শেষে γ",
+            c: "একই সঙ্গে α, β এবং পরে γ",
+            d: "α এবং γ অথবা β এবং γ",
+          },
+          correct: "d",
+          explanation:
+            "<p>একটি তেজস্ক্রিয় মৌল সাধারণত একই সময়ে আলফা (α) এবং গামা (γ) রশ্মি অথবা বিটা (β) এবং গামা (γ) রশ্মি নির্গত করে। একটি নিউক্লিয়াস সাধারণত α বা β ক্ষয় করে স্থিতিশীল হয়, এবং প্রায়শই এই ক্ষয়ের পরে নিউক্লিয়াস উত্তেজিত অবস্থায় থাকলে অতিরিক্ত শক্তি গামা রশ্মি হিসেবে নির্গত হয়। একই সাথে α এবং β ক্ষয় সাধারণত ঘটে না কারণ দুটি ভিন্ন প্রক্রিয়া একই সাথে নিউক্লিয়াসকে প্রভাবিত করতে পারে না।</p>",
+        },
+        {
+          id: 24,
+          question: "কোনটির ভর নেই?",
+          options: {
+            a: "আলফা রশ্মি",
+            b: "বিটা রশ্মি",
+            c: "গামা রশ্মি",
+            d: "এক্স রশ্মি",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) হলো ফোটন কণা দ্বারা গঠিত তড়িৎচুম্বকীয় বিকিরণ। ফোটনের কোনো স্থির ভর নেই, অর্থাৎ এর স্থির ভর শূন্য। এটি আলোর গতিতে চলে। অন্যদিকে, আলফা ও বিটা রশ্মির নির্দিষ্ট ভর আছে। এক্স রশ্মি যদিও তড়িৎচুম্বকীয় বিকিরণ, এটি সাধারণত ফোটন হিসেবে গণ্য হয়, তবে প্রশ্নের প্রেক্ষাপটে গামা রশ্মিই সবচেয়ে উপযুক্ত উত্তর কারণ এর সাথে 'কণা' শব্দটি যুক্ত না থাকায় এর ভরহীন প্রকৃতি আরও স্পষ্ট হয়।</p>",
+        },
+        {
+          id: 25,
+          question: "α-কণা হলো-",
+          options: {
+            a: "²He",
+            b: "¹H",
+            c: "⁴He",
+            d: "³He",
+          },
+          correct: "c",
+          explanation:
+            "<p>আলফা কণা (α-কণা) হলো একটি হিলিয়াম নিউক্লিয়াস যা দুটি প্রোটন এবং দুটি নিউট্রন নিয়ে গঠিত। এর প্রতীক <sup>4</sup>He<sub>2</sub>, যা হিলিয়াম-৪ এর নিউক্লিয়াসকে নির্দেশ করে। এটি ধনাত্মক চার্জযুক্ত এবং তেজস্ক্রিয় ক্ষয়ের সময় নির্গত হয়।</p>",
+        },
+        {
+          id: 26,
+          question: "α, β ও γ কণার ভেদন ক্ষমতার অনুপাত -",
+          options: {
+            a: "1000 : 100 : 1",
+            b: "100 : 1 : 1000",
+            c: "1 : 100 : 1000",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>আলফা (α) রশ্মির ভেদন ক্ষমতা সবচেয়ে কম, বিটা (β) রশ্মির ভেদন ক্ষমতা আলফা রশ্মির চেয়ে বেশি এবং গামা (γ) রশ্মির ভেদন ক্ষমতা সবচেয়ে বেশি। এদের ভেদন ক্ষমতার আনুমানিক অনুপাত 1 : 100 : 1000। অর্থাৎ, আলফা রশ্মি 1, বিটা রশ্মি 100 এবং গামা রশ্মি 1000 একক পর্যন্ত ভেদ করতে পারে।</p>",
+        },
+        {
+          id: 27,
+          question: "কোনো তেজস্ক্রিয় মৌল থেকে বিকিরিত α কণা হচ্ছে -",
+          options: {
+            a: "হিলিয়াম নিউক্লিয়াস",
+            b: "হাইড্রোজেন নিউক্লিয়াস",
+            c: "লিথিয়াম নিউক্লিয়াস",
+            d: "বোরোন নিউক্লিয়াস",
+          },
+          correct: "a",
+          explanation:
+            "<p>তেজস্ক্রিয় ক্ষয়ের সময় নির্গত আলফা (α) কণা হলো একটি হিলিয়াম নিউক্লিয়াস (<sup>4</sup>He<sub>2</sub>)। এটি দুটি প্রোটন এবং দুটি নিউট্রন নিয়ে গঠিত এবং এর চার্জ +2e। এটি একটি ভারী কণা হওয়ায় এর ভেদন ক্ষমতা তুলনামূলকভাবে কম।</p>",
+        },
+        {
+          id: 28,
+          question: "নিচের কোন দুটি রশ্মি একই ধর্ম প্রদর্শন করে?",
+          options: {
+            a: "X-ray এবং α-ray",
+            b: "γ-ray এবং β-ray",
+            c: "X-ray এবং γ-ray",
+            d: "α-ray এবং β-ray",
+          },
+          correct: "c",
+          explanation:
+            "<p>এক্স-রশ্মি (X-ray) এবং গামা রশ্মি (γ-ray) উভয়ই তড়িৎচুম্বকীয় বিকিরণ। এদের কোনো চার্জ বা স্থির ভর নেই এবং উভয়ই আলোর গতিতে চলে। এদের তরঙ্গদৈর্ঘ্য এবং শক্তি পরিসরে কিছুটা পার্থক্য থাকলেও, মৌলিক ধর্ম একই।</p>",
+        },
+        {
+          id: 29,
+          question: "γ-রশ্মির মধ্যে আছে-",
+          options: {
+            a: "ইলেকট্রন",
+            b: "প্রোটন",
+            c: "ফোটন",
+            d: "পজিট্রন",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) হলো উচ্চ শক্তিসম্পন্ন তড়িৎচুম্বকীয় বিকিরণ, যা ফোটন কণা দ্বারা গঠিত। ফোটন হলো আলো বা অন্য কোনো তড়িৎচুম্বকীয় তরঙ্গের মৌলিক কণিকা। গামা রশ্মি তেজস্ক্রিয় নিউক্লিয়াসের উত্তেজিত অবস্থা থেকে শক্তি নির্গত করার সময় উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "জাল টাকা শনাক্তকরণে কোন রশ্মির ব্যবহার নির্ভুল ও সময় উপযোগী?",
+          options: {
+            a: "X-ray",
+            b: "UV-ray",
+            c: "γ-ray",
+            d: "β-ray",
+          },
+          correct: "b",
+          explanation:
+            "<p>জাল টাকা শনাক্তকরণে অতিবেগুনি (UV) রশ্মি ব্যবহৃত হয়। আসল নোটে কিছু বিশেষ নিরাপত্তা বৈশিষ্ট্য থাকে যা UV আলোর নিচে আলোকিত হয় বা অদৃশ্য হয়ে যায়। জাল নোটে সাধারণত এই বৈশিষ্ট্যগুলো থাকে না বা সঠিকভাবে প্রতিলিপি করা যায় না, তাই UV আলো ব্যবহার করে সহজেই জাল টাকা সনাক্ত করা যায়।</p>",
+        },
+        {
+          id: 31,
+          question: "কোনটি নিউক্লীয় ঘটনা নয়?",
+          options: {
+            a: "α-রশ্মি",
+            b: "β-রশ্মি",
+            c: "γ-রশ্মি",
+            d: "X-রশ্মি",
+          },
+          correct: "d",
+          explanation:
+            "<p>আলফা (α), বিটা (β) এবং গামা (γ) রশ্মি হলো তেজস্ক্রিয় ক্ষয় প্রক্রিয়ার ফলাফল, যা পরমাণুর নিউক্লিয়াসের অভ্যন্তরে ঘটে। তাই এগুলো নিউক্লীয় ঘটনা। এক্স-রশ্মি (X-ray) হলো উচ্চ শক্তিসম্পন্ন তড়িৎচুম্বকীয় বিকিরণ যা সাধারণত ইলেকট্রনের কক্ষপথের পরিবর্তন বা দ্রুতগতিসম্পন্ন ইলেকট্রনকে লক্ষ্যবস্তুতে আঘাত করার মাধ্যমে উৎপন্ন হয়। এটি একটি ইলেকট্রনিক ঘটনা, নিউক্লীয় ঘটনা নয়।</p>",
+        },
+        {
+          id: 32,
+          question: "চৌম্বক ক্ষেত্র দ্বারা প্রভাবিত হয় না-",
+          options: {
+            a: "আলফা রশ্মি",
+            b: "বিটা রশ্মি",
+            c: "গামা রশ্মি",
+            d: "এক্স-রশ্মি",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) হলো চার্জবিহীন তড়িৎচুম্বকীয় বিকিরণ। যেহেতু এর কোনো বৈদ্যুতিক চার্জ নেই, এটি চৌম্বক ক্ষেত্র বা তড়িৎ ক্ষেত্র দ্বারা প্রভাবিত হয় না এবং বিচ্যুত হয় না। অন্যদিকে, আলফা (ধনাত্মক চার্জ) এবং বিটা (ঋণাত্মক চার্জ) রশ্মি চৌম্বক ক্ষেত্র দ্বারা বিচ্যুত হয়। এক্স-রশ্মিও চার্জবিহীন, তাই এটিও চৌম্বক ক্ষেত্র দ্বারা প্রভাবিত হয় না।</p>",
+        },
+        {
+          id: 33,
+          question:
+            "চৌম্বক ক্ষেত্রের প্রভাবে গামা রশ্মির বিচ্যুত না হওয়ার কারণ-",
+          options: {
+            a: "এই রশ্মির ভেদনক্ষমতা অত্যন্ত বেশি",
+            b: "এর আয়নায়ন ক্ষমতা খুব কম",
+            c: "এদের চার্জ নেই",
+            d: "এ রশ্মির দ্রুতি অত্যন্ত বেশি",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি (γ-রশ্মি) হলো ফোটন কণা দ্বারা গঠিত তড়িৎচুম্বকীয় বিকিরণ। ফোটনের কোনো বৈদ্যুতিক চার্জ নেই। যেহেতু চৌম্বক ক্ষেত্র শুধুমাত্র চার্জযুক্ত কণাকে প্রভাবিত করে, তাই গামা রশ্মি চৌম্বক ক্ষেত্র দ্বারা বিচ্যুত হয় না।</p>",
+        },
+        {
+          id: 34,
+          question: "নিচের কোনটি বিটা রশ্মির ধর্ম?",
+          options: {
+            a: "তরঙ্গধর্মী",
+            b: "কণাধর্মী",
+            c: "চার্জ নাই",
+            d: "জড়তা নাই",
+          },
+          correct: "b",
+          explanation:
+            "<p>বিটা রশ্মি হলো দ্রুত গতিশীল ইলেকট্রন বা পজিট্রনের স্রোত। ইলেকট্রন এবং পজিট্রন উভয়ই কণা। তাই বিটা রশ্মি কণাধর্মী। এটি ঋণাত্মক বা ধনাত্মক চার্জযুক্ত এবং এর ভরও আছে, তাই এটি গতিশক্তি এবং জড়তা ধারণ করে।</p>",
+        },
+        {
+          id: 35,
+          question: "সবচেয়ে কম ভেদনযোগ্যতা সম্পন্ন রশ্মি কোনটি?",
+          options: {
+            a: "আলফা",
+            b: "বিটা",
+            c: "গামা",
+            d: "এক্স-রে",
+          },
+          correct: "a",
+          explanation:
+            "<p>আলফা (α) রশ্মি হলো দুটি প্রোটন ও দুটি নিউট্রন নিয়ে গঠিত ভারী কণা। এর বড় ভর এবং +2 চার্জের কারণে এটি সহজেই পদার্থের সাথে সংঘর্ষে লিপ্ত হয় এবং শক্তি হারায়। ফলে এর ভেদন ক্ষমতা অত্যন্ত কম; এমনকি একটি কাগজ বা কয়েক সেন্টিমিটার বায়ু দ্বারাও এটি শোষিত হয়।</p>",
+        },
+        {
+          id: 36,
+          question: "গামা রশ্মির ক্ষেত্রে কোনটি সঠিক নয়?",
+          options: {
+            a: "স্থির ভর শূন্য",
+            b: "আধান নিরপেক্ষ",
+            c: "চৌম্বক ক্ষেত্র দ্বারা প্রভাবিত",
+            d: "বেদন ক্ষমতা বেশি",
+          },
+          correct: "c",
+          explanation:
+            "<p>গামা রশ্মি হলো ফোটন কণা দ্বারা গঠিত তড়িৎচুম্বকীয় বিকিরণ। এর কোনো বৈদ্যুতিক চার্জ নেই, অর্থাৎ এটি আধান নিরপেক্ষ এবং এর স্থির ভর শূন্য। যেহেতু এর কোনো চার্জ নেই, তাই এটি চৌম্বক ক্ষেত্র দ্বারা প্রভাবিত হয় না। এর ভেদন ক্ষমতা সবচেয়ে বেশি। সুতরাং, 'চৌম্বক ক্ষেত্র দ্বারা প্রভাবিত' এই তথ্যটি সঠিক নয়।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                            <div class="circle">${option}</div>
+                                            <span class="option-text">${question.options[option]}</span>
+                                            </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                                                     <div class="explanation-content">
+                                                                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                                                       ${question.explanation}
+                                                                                                     </div>
+                                                                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                                                <p class="question-label">${
+                                                                                                  index +
+                                                                                                  1
+                                                                                                }. ${
+            question.question
+          }</p>
+                                                                                                <div class="options">
+                                                                                                  ${optionsHTML}
+                                                                                                </div>
+                                                                                                ${explanationHTML}
+                                                                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
